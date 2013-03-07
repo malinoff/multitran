@@ -1,7 +1,17 @@
 import argparse
 import urllib
 
+from twisted.internet import reactor
+from twisted.internet import defer
+
 from multitran_api import MultitranAPI
+
+@defer.inlineCallbacks
+def translate(word, lang):
+    result = yield api.translate(word, lang)
+    print result
+    reactor.stop()
+
 
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
@@ -12,4 +22,5 @@ if __name__=='__main__':
     api = MultitranAPI()
     word = urllib.quote(args.word)
     lang = api.langs[args.lang][1]
-    print api.translate(word, lang)
+    translate(word, lang)
+    reactor.run()
