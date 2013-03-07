@@ -2,7 +2,7 @@ import urllib
 from lxml import etree
 
 from twisted.web.client import getPage
-from twisted.internet.defer import Deferred, inlineCallbacks
+from twisted.internet.defer import Deferred, inlineCallbacks, returnValue
 
 class MultitranAPI(object):
 
@@ -24,22 +24,17 @@ class MultitranAPI(object):
     def get_languages(self):
         return dict(map(lambda x: (x[0], x[1][0]), self.langs.items()))
 
+    @inlineCallbacks
     def translate(self, word, lang):
-        @inlineCallbacks
-        def _parse_page(page):
-            translation = ''
-            html = etree.HTML(page)
-            trs = html.xpath('//form[@id="translation"]/../table[2]/tr')
-            for tr in trs:
-                tds = tr.xpath('td')
-                for td in tds:
-                    for elem in td.xpath('descendant::text()'):
-                        translation += '%s' % elem.rstrip('\r\n')
-                translation += '\n'
-            yield d.callback(translation)
-
         page = 'http://www.multitran.ru/c/m.exe?CL=1&s=%s&l1=%d'%(word, lang)
-        getPage(page).addCallbacks(callback=_parse_page,
-                                   errback=lambda x: d.errback(x))
-        d = Deferred()
-        return d
+        page = yield getPage(page)
+        translation = ''
+        html = etree.HTML(page)
+        trs = html.xpath('//form[@id="translation"]/../table[2]/tr')
+        for tr in trs:
+            tds = tr.xpath('td')
+            for td in tds:
+                for elem in td.xpath('descendant::text()'):
+                    translation += '%s' % elem.rstrip('\r\n')
+            translation += '\n'
+        returnValue(translation)
