@@ -21,7 +21,7 @@ class MultitranAPI(object):
              'xal': ('Kalmyk', 35)
              }
 
-    def parse_page(self, page):
+    def _parse_page(self, page):
         translation = ''
         html = etree.HTML(page)
         trs = html.xpath('//form[@id="translation"]/../table[2]/tr')
@@ -31,7 +31,15 @@ class MultitranAPI(object):
                 for elem in td.xpath('descendant::text()'):
                     translation += '%s' % elem.rstrip('\r\n')
             translation += '\n'
+        reactor.stop()
         return translation
 
     def get_languages(self):
         return dict(map(lambda x: (x[0], x[1][0]), self.langs.items()))
+
+    def translate(self, word, lang):
+        page = 'http://www.multitran.ru/c/m.exe?CL=1&s=%s&l1=%d'%(word, lang)
+        d = getPage(page).addCallbacks(callback=self._parse_page,
+                                   errback=lambda x: reactor.stop())
+        reactor.run()
+        return d.result
